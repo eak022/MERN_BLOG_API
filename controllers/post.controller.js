@@ -70,6 +70,27 @@ exports.getPostById = async (req, res) => {
   }
 };
 
+exports.getPostByAuthor = async(req,res)=>{
+  const { id } = req.params;
+  try {
+    const postDoc = await PostModel.find({author:id}).populate("author", [
+      "username",
+    ]);
+    if (!postDoc) {
+      res.status(404).send({
+        message: "Post notfound",
+      });
+      return;
+    }
+    res.json(postDoc);
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send({
+      message: "Something error occurred while getting post by author",
+    });
+  }
+}
+
 exports.updatePost = async (req, res) => {
   const { id } = req.params;
   const authorId = req.userId;
