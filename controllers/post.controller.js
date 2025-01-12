@@ -1,34 +1,41 @@
 const PostModel = require("../models/Post");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const cloudinary = require('../config/cloudinaryConfig');
 const secret = process.env.SECRET;
 
 exports.createPost = async (req, res) => {
+  //File upload
+ if (!req.file) {
+    return res.status(400).json({ message: "Image is required" });
+  }
+  const { path } = req.file.firebaseUrl;
+  console.log(path);
+
+  const author = req.userId;
+  const { title, summary, content } = req.body;
+  if (!title || !summary || !content) {
+    return res.status(400).json({ message: "All Fields is requires" });
+  }
+
   try {
-    const { title, summary, content } = req.body;
-    const author = req.userId;
-
-    if (!title || !summary || !content) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const cover = req.file.path; // URL จาก Cloudinary
-
-    // สร้างเอกสารโพสต์
     const postDoc = await PostModel.create({
       title,
       summary,
       content,
-      cover,
+      cover: req.file.firebaseUrl,
       author,
     });
-
+    if (!postDoc) {
+      res.status(400).send({
+        message: "Cannot create new post!",
+      });
+      return;
+    }
     res.json(postDoc);
   } catch (error) {
-    console.error(error.message);
     res.status(500).send({
-      message: "An error occurred while creating the post",
+      message:
+        error.message || "Something error occurred while creating a new post.",
     });
   }
 };
@@ -94,38 +101,32 @@ exports.getPostByAuthor = async(req,res)=>{
 exports.updatePost = async (req, res) => {
   const { id } = req.params;
   const authorId = req.userId;
-
   if (!id) return res.status(404).json({ message: "Post id is not Provided" });
-
   try {
     const postDoc = await PostModel.findById(id);
     if (authorId !== postDoc.author.toString()) {
-      return res.status(403).json({ message: "You cannot update this post" });
+      res.status(403).send({
+        message: "You Cannnot update this post",
+      });
+      return;
     }
 
     const { title, summary, content } = req.body;
     if (!title || !summary || !content) {
       return res.status(400).json({ message: "All fields are required" });
     }
-
     postDoc.title = title;
     postDoc.summary = summary;
     postDoc.content = content;
-
     if (req.file) {
-      // อัปโหลดไฟล์ใหม่ไปยัง Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "mern_blog_images",
-      });
-      postDoc.cover = result.secure_url; // อัปเดต URL ใหม่
+      postDoc.cover = req.file.firebaseUrl;
     }
-
     await postDoc.save();
     res.json(postDoc);
   } catch (error) {
-    console.error(error.message);
     res.status(500).send({
-      message: "An error occurred while updating the post",
+      message:
+        error.message || "Somthing error occurrend white updating a post",
     });
   }
 };

@@ -1,11 +1,11 @@
-const cloudinary = require('cloudinary').v2;
-require('dotenv').config();
-
-// ตั้งค่าการเชื่อมต่อ Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-module.exports = cloudinary;
+// Your web app's Firebase configuration
+require("dotenv").config();
+const firebaseConfig = {
+  apiKey: process.env.apiKey,
+  authDomain: process.env.authDomain,
+  projectId: process.env.projectId,
+  storageBucket: process.env.storageBucket,
+  messagingSenderId: process.env.messagingSenderId,
+  appId: process.env.appId,
+};
+module.exports = firebaseConfig;

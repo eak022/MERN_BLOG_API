@@ -1,29 +1,69 @@
 const multer = require("multer");
-const { v2: cloudinary } = require("cloudinary");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
-require("dotenv").config();
+const path = require("path");
 
-// ตั้งค่า Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const firebaseConfig = require("../configs/firebase.config");
+const {getStorage, ref, uploadBytesResumable,getDownloadURL,} = require("firebase/storage");
+const {initializeApp} = require("firebase/app");
 
-// ตั้งค่า Storage ของ Multer ให้ใช้ Cloudinary
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "mern_blog_images", // กำหนดโฟลเดอร์ใน Cloudinary
-    allowed_formats: ["jpeg", "jpg", "png", "gif", "webp"], // ฟอร์แมตที่อนุญาต
-    transformation: [{ quality: "auto" }], // ลดคุณภาพอัตโนมัติ (ปรับขนาดไฟล์)
-  },
-});
+const app = initializeApp(firebaseConfig);
+const firebaseStorage = getStorage(app);
 
-// สร้าง Middleware อัปโหลด
+// //Set Storage engine
+// const storage = multer.diskStorage({
+//   destination: "./uploads/",
+//   filename: (req, file, cb) => {
+//     cb(
+//       null,
+//       file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+//     );
+//   },
+// });
+
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5000000 }, // จำกัดขนาดไฟล์ 5 MB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500000 }, //5MB
+  fileFilter: (req, file, cb) => {
+    checkFileType(file, cb); //Check file exit
+  },
 }).single("file");
 
-module.exports = { upload };
+function checkFileType(file, cb) {
+  const fileType = /jpeg|jpg|png|git|webp/;
+  const extName = fileType.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = fileType.test(file.mimetype);
+
+  if (mimetype && extName) {
+    return cb(null, true);
+  } else {
+    cb("Error:Image Only ! ");
+  }
+}
+
+//upload to firebase
+async function uploadToFirebase(req,res,next){
+  if(!req.file){
+    // return res.status(400).json({message:"Image is required"})
+    next();
+  }else{
+    //savelocation
+  const storageRef = ref(firebaseStorage,`uploads/${req?.file?.originalname}`);
+  //file type
+  const metadata = {
+    contentType : req?.file?.mimetype,
+  }
+  try{
+    //uploading..
+    const snapshot = await uploadBytesResumable(storageRef,req?.file?.buffer,metadata);
+    //get url from firebase
+    req.file.firebaseUrl = await getDownloadURL(snapshot.ref);
+    next();
+  }catch(error){
+    res.status(500).json({message:error.message || "Somthing wen wrong while uploading to firebase"});
+  }
+
+}
+  }
+  
+  
+
+module.exports = { upload,uploadToFirebase };
