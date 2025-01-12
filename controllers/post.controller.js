@@ -8,8 +8,11 @@ exports.createPost = async (req, res) => {
  if (!req.file) {
     return res.status(400).json({ message: "Image is required" });
   }
-  const { path } = req.file.firebaseUrl;
+  const {path} = req.file.firebaseUrl;
   console.log(path);
+  
+  // const { path } = req.file.firebaseUrl;
+  // console.log(path);
 
   const author = req.userId;
   const { title, summary, content } = req.body;
