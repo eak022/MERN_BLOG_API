@@ -1,6 +1,5 @@
 const multer = require("multer");
 const path = require("path");
-
 const firebaseConfig = require("../configs/firebase.config");
 const {getStorage, ref, uploadBytesResumable,getDownloadURL,} = require("firebase/storage");
 const {initializeApp} = require("firebase/app");
@@ -8,16 +7,6 @@ const {initializeApp} = require("firebase/app");
 const app = initializeApp(firebaseConfig);
 const firebaseStorage = getStorage(app);
 
-// //Set Storage engine
-// const storage = multer.diskStorage({
-//   destination: "./uploads/",
-//   filename: (req, file, cb) => {
-//     cb(
-//       null,
-//       file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-//     );
-//   },
-// });
 
 const upload = multer({
   storage: multer.memoryStorage(),
